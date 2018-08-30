@@ -1,4 +1,6 @@
-//{block name="backend/reschannable/controller/article_mapping"}
+/* {namespace name=backend/reschannable_articles/controller/article_mapping} */
+
+//{block name="backend/reschannable_articles/controller/article_mapping"}
 Ext.define('Shopware.apps.ReschannableArticles.controller.ArticleMapping', {
     /**
      * Extend from the standard ExtJS 4 controller
@@ -205,12 +207,12 @@ Ext.define('Shopware.apps.ReschannableArticles.controller.ArticleMapping', {
     _sendRequest: function(action, ids) {
         var mapping = this.getArticleMappingView();
         var url = '{url controller=ReschannableArticles action=addChannableArticles}';
-        var message = '{s name="reschannable/action/addarticles/success"}[0]x articles assigned{/s}';
-        var failure = '{s name="reschannable/action/addarticles/failure"}The following error occurred while adding the articles:{/s}';
+        var message = '{s name="action/addarticles/success"}[0]x articles assigned{/s}';
+        var failure = '{s name="action/addarticles/failure"}The following error occurred while adding the articles:{/s}';
 
         if(action === 'remove') {
-            message = '{s name="reschannable/action/removearticles/success"}[0]x articles assignments removed{/s}';
-            failure = '{s name="reschannable/action/removearticles/failure"}The following error occurred while removing the articles:{/s}';
+            message = '{s name="action/removearticles/success"}[0]x articles assignments removed{/s}';
+            failure = '{s name="action/removearticles/failure"}The following error occurred while removing the articles:{/s}';
 
             url = '{url controller=ReschannableArticles action=removeChannableArticles}';
         }

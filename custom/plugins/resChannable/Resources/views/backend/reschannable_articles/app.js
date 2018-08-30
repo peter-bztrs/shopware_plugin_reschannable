@@ -1,6 +1,6 @@
-/* {namespace name=backend/reschannablearticles/main} */
+/* {namespace name=backend/reschannable_articles/app} */
 
-//{block name="backend/reschannablearticles/app"}
+//{block name="backend/reschannable_articles/app"}
 Ext.define('Shopware.apps.ReschannableArticles', {
     /**
      * Extends from our special controller, which handles the

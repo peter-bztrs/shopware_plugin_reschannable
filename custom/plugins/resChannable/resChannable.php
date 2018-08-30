@@ -18,7 +18,19 @@ class resChannable extends Plugin
     {
         return [
             'Enlight_Controller_Action_PreDispatch' => 'addTemplateDir',
+            'Enlight_Controller_Dispatcher_ControllerPath_Api_resChannableApi' => 'onGetReschannableApiController',
+            'Enlight_Controller_Front_StartDispatch' => 'onEnlightControllerFrontStartDispatch'
         ];
+    }
+
+    public function onGetReschannableApiController()
+    {
+        return $this->getPath() . '/Controllers/Api/resChannableApi.php';
+    }
+
+    public function onEnlightControllerFrontStartDispatch()
+    {
+        $this->container->get('loader')->registerNamespace('Shopware\Components', $this->getPath() . '/Components/');
     }
 
     public function addTemplateDir(\Enlight_Controller_ActionEventArgs $args)

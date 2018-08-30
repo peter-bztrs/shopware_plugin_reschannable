@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
  * @package resChannable
  *
  * @ORM\Entity(repositoryClass="Repository")
- * @ORM\table(name="reschannable_articles")
+ * @ORM\Table(name="reschannable_articles")
  */
 class resChannableArticle extends ModelEntity
 {

@@ -16,7 +16,7 @@
                     <label lang="en">Article</label>
                     <label lang="de">Artikel</label>
                     <controller>ReschannableArticles</controller>
-                    <action>detail</action>
+                    <action>index</action>
                     <class>sprite-edit-list</class>
                 </entry>
             </children>

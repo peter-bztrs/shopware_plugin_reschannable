@@ -1,6 +1,6 @@
-/* {namespace name=backend/reschannablearticles/main} */
+/* {namespace name=backend/reschannable_articles/view/main/window} */
 
-//{block name="backend/reschannablearticles/view/main/window"}
+//{block name="backend/reschannable_articles/view/main/window"}
 Ext.define('Shopware.apps.ReschannableArticles.view.main.Window', {
 
     /**
@@ -13,7 +13,7 @@ Ext.define('Shopware.apps.ReschannableArticles.view.main.Window', {
      * Title of this window
      * @string
      */
-    title: '{s name=window/main_title}Articles{/s}',
+    title: '{s name=main_title}Articles{/s}',
 
     /**
      * XType for this component
@@ -127,11 +127,11 @@ Ext.define('Shopware.apps.ReschannableArticles.view.main.Window', {
             //disabled: true,
             layout: 'fit'
         });*/
-        console.log(me.availableProductsStore);
 
         return [
             {
                 xtype:'reschannablearticles-articles-tabs-article_mapping',
+                title:'{s name=tabs/article_mapping/title}Article-Mapping{/s}',
                 availableProductsStore : me.availableProductsStore,
                 assignedProductsStore : me.assignedProductsStore
             }

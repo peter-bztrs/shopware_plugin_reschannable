@@ -2,7 +2,6 @@
 
 use resChannable\Models\resChannableArticle\resChannableArticle;
 use Doctrine\DBAL\Query\QueryBuilder;
-use Shopware\Models\Category\Category;
 
 class Shopware_Controllers_Backend_ReschannableArticles extends Shopware_Controllers_Backend_Application
 {

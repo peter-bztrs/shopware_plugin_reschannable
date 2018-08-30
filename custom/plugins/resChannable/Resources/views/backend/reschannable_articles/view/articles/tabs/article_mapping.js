@@ -1,4 +1,4 @@
-/* {namespace name=backend/reschannablearticles/main} */
+/* {namespace name=backend/reschannable_articles/view/articles/tabs/article_mapping} */
 
 Ext.define('Shopware.apps.ReschannableArticles.view.articles.tabs.ArticleMapping', {
 
@@ -63,8 +63,8 @@ Ext.define('Shopware.apps.ReschannableArticles.view.articles.tabs.ArticleMapping
      * @object
      */
     buttonsText: {
-        add: "{s name=tabs/article_mapping/button_add}Add{/s}",
-        remove: "{s name=tabs/article_mapping/button_remove}Remove{/s}"
+        add: "{s name=button_add}Add{/s}",
+        remove: "{s name=button_remove}Remove{/s}"
     },
 
     /**
@@ -122,8 +122,6 @@ Ext.define('Shopware.apps.ReschannableArticles.view.articles.tabs.ArticleMapping
     initComponent:function () {
         var me = this;
 
-        console.log('article_mapping initComponent');
-
         me.fromGrid = me.createFromGrid();
         me.buttonContainer = me.createActionButtons();
         me.toGrid = me.createToGrid();
@@ -144,7 +142,7 @@ Ext.define('Shopware.apps.ReschannableArticles.view.articles.tabs.ArticleMapping
 
         grid = Ext.create('Ext.grid.Panel', {
             internalTitle: 'from',
-            title: '{s name=tabs/article_mapping/available_articles}Available Articles{/s}',
+            title: '{s name=available_articles}Available Articles{/s}',
             flex: 1,
             store: me.availableProductsStore.load(),
             selModel: me.createSelectionModel(),
@@ -168,7 +166,7 @@ Ext.define('Shopware.apps.ReschannableArticles.view.articles.tabs.ArticleMapping
 
         grid =  Ext.create('Ext.grid.Panel', {
             internalTitle: 'to',
-            title: '{s name=tabs/article_mapping/mapped_articles}Mapped Articles{/s}',
+            title: '{s name=mapped_articles}Mapped Articles{/s}',
             flex: 1,
             store: me.assignedProductsStore.load(),
             selModel: me.createSelectionModel(),
@@ -299,16 +297,16 @@ Ext.define('Shopware.apps.ReschannableArticles.view.articles.tabs.ArticleMapping
         var me = this;
 
         return [{
-            header: '{s name=tabs/article_mapping/columns/article_number}Article Number{/s}',
+            header: '{s name=columns/article_number}Article Number{/s}',
             flex: 1,
             dataIndex: 'number'
         }, {
-            header: '{s name=tabs/article_mapping/columns/article_name}Article Name{/s}',
+            header: '{s name=columns/article_name}Article Name{/s}',
             flex: 2,
             dataIndex: 'name',
             renderer: me.nameColumnRenderer
         }, {
-            header: '{s name=tabs/article_mapping/columns/supplier_name}Supplier Name{/s}',
+            header: '{s name=columns/supplier_name}Supplier Name{/s}',
             flex: 1,
             dataIndex: 'supplierName'
         }];

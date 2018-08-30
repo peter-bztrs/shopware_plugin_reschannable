@@ -1,0 +1,480 @@
+<?php
+
+class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_Rest
+{
+
+    private $allowedFncs = array('getarticles');
+
+    /**
+     * @var \resChannable\Components\Api\Resource\ResChannableArticle
+     */
+    protected $channableArticleResource = null;
+
+    /**
+     * @var \Shopware\Components\Api\Resource\Article
+     */
+    protected $articleResource = null;
+
+    /**
+     * @var \Shopware\Components\Api\Resource\Media
+     */
+    protected $mediaResource = null;
+
+    /**
+     * @var \Shopware\Models\Shop\Shop
+     */
+    protected $shop = null;
+
+    protected $sSYSTEM = null;
+
+    protected $config = null;
+
+    /**
+     * @var sAdmin
+     */
+    protected $admin = null;
+
+    /**
+     * @var sExport
+     */
+    protected $export = null;
+
+    /**
+     * @var Shopware_Components_Modules
+     */
+    protected $moduleManager = null;
+
+    private $paymentMethods = null;
+
+    public function init()
+    {
+        $repository = Shopware()->Models()->getRepository('Shopware\Models\Shop\Shop');
+        $this->shop = $repository->getActiveDefault();
+        $this->shop->registerResources(Shopware()->Container());
+        $this->admin = Shopware()->Modules()->Admin();
+        $this->export = Shopware()->Modules()->Export();
+
+        $this->setContainer(Shopware()->Container());
+
+        $this->channableArticleResource = \Shopware\Components\Api\Manager::getResource('ResChannableArticle');
+        $this->articleResource = \Shopware\Components\Api\Manager::getResource('Article');
+        $this->mediaResource = \Shopware\Components\Api\Manager::getResource('Media');
+
+        $this->sSYSTEM = Shopware()->System();
+
+        $this->config = Shopware()->Config();
+
+        $this->moduleManager = $this->container->get('Modules');
+
+        $this->loadPaymentMethods();
+    }
+
+    public function indexAction()
+    {
+        $fnc = $this->Request()->getParam('fnc');
+
+        if ( !in_array($fnc,$this->allowedFncs)) {
+
+            throw new Shopware\Components\Api\Exception\ValidationException('Function not found');
+
+        }
+
+        $result = array();
+
+        switch ($fnc) {
+
+            case 'getarticles':
+
+                $articleList = $this->getArticleList();
+
+                $result['articles'] = $articleList;
+
+                break;
+
+        }
+
+        $this->View()->assign($result);
+        $this->View()->assign('success', true);
+    }
+
+    private function getArticleList()
+    {
+
+        $articleIdList = $this->getArticleIdList();
+
+        $result = array();
+
+        for ($i = 0; $i < sizeof($articleIdList); $i++) {
+
+            $channableArticle = $articleIdList[$i];
+
+            $detail = $channableArticle['detail'];
+            $article = $detail['article'];
+            $articleId = $detail['articleId'];
+            $item = array();
+
+            $item['id'] = $detail['id'];
+            $item['groupId'] = $detail['articleId'];
+            $item['articleNumber'] = $detail['number'];
+            $item['active'] = $detail['active'];
+            $item['name'] = $article['name'];
+            $item['additionalText'] = $detail['additionalText'];
+            $item['supplier'] = $article['supplier']['name'];
+            $item['supplierNumber'] = $detail['supplierNumber'];
+            $item['ean'] = $detail['ean'];
+            $item['description'] = $article['description'];
+            $item['descriptionLong'] = $article['descriptionLong'];
+
+            $item['releaseDate'] = $detail['releaseDate'];
+
+            $item['images'] = $this->getArticleImages($articleId);
+
+            # Links
+            $links = $this->getArticleLinks($articleId,$article['name']);
+            $item['seoUrl'] = $links['seoUrl'];
+            $item['url'] = $links['url'];
+            $item['rewriteUrl'] = $links['rewrite'];
+
+            # Only show stock if instock exceeds minpurchase
+            if ( $detail['inStock'] >= $detail['minPurchase']) {
+                $item['stock'] = $detail['inStock'];
+            } else {
+                $item['stock'] = 0;
+            }
+
+            # Price
+            $item['priceNetto'] = $detail['prices'][0]['price'];
+            $item['priceBrutto'] = round($detail['prices'][0]['price'] * (($article['tax']['tax'] + 100) / 100),2);
+            $item['pseudoPriceNetto'] = $detail['prices'][0]['pseudoPrice'];
+            $item['pseudoPriceBrutto'] = round($detail['prices'][0]['pseudoPrice'] * (($article['tax']['tax'] + 100) / 100),2);
+            $item['currency'] = $this->shop->getCurrency()->getCurrency();
+            $item['taxRate'] = $article['tax']['tax'];
+
+            # Delivery time text
+            $item['shippingTime'] = $detail['shippingTime'];
+            $item['shippingTimeText'] = $this->getShippingTimeText($detail);
+            $item['shippingFree'] = $detail['shippingFree'];
+
+            $item['weight'] = $detail['weight'];
+            $item['width'] = $detail['width'];
+            $item['height'] = $detail['height'];
+            $item['length'] = $detail['len'];
+
+            # Units
+            $item['packUnit'] = $detail['packUnit'];
+            $item['purchaseUnit'] = $detail['purchaseUnit'];
+            $item['referenceUnit'] = $detail['referenceUnit'];
+            if ( isset($detail['unit']) ) {
+                $item['unit'] = $detail['unit']['unit'];
+                $item['unitName'] = $detail['unit']['name'];
+            }
+
+            # Categories
+            $item['categories'] = $this->getArticleCategories($articleId);
+
+            # Shipping costs
+            $item['shippingCosts'] = $this->getShippingCosts($detail);
+
+            # Properties
+            $item['properties'] = $this->getArticleProperties($article['propertyValues']);
+
+            # Todo similar
+
+            # ToDo related / crossselling
+
+            $result[] = $item;
+
+        }
+
+        return $result;
+    }
+
+    private function getArticleIdList()
+    {
+        $limit = $this->Request()->getParam('limit');
+        $offset = $this->Request()->getParam('offset');
+        $filter = '';
+        $sort = '';
+
+        $this->View()->assign('offset', $offset);
+        $this->View()->assign('limit', $limit);
+
+        $result = $this->channableArticleResource->getList($offset, $limit, $filter, $sort);
+
+        return $result['data'];
+    }
+
+    private function getArticleImages($articleId)
+    {
+        $articleImages = $this->channableArticleResource->getArticleImages($articleId);
+
+        $images = array();
+
+        for ( $i = 0; $i < sizeof($articleImages); $i++ ) {
+
+            $image = $this->mediaResource->getOne($articleImages[$i]['mediaId']);
+            $images[] = $image['path'];
+
+        }
+
+        return $images;
+    }
+
+    /**
+     * Helper function which selects all configured links
+     * for the passed article id.
+     *
+     * @param $articleId
+     *
+     * @return array
+     */
+    protected function getArticleLinks($articleId,$name)
+    {
+        $baseFile = $this->getBasePath();
+        $detail = $baseFile . '?sViewport=detail&sArticle=' . $articleId;
+
+        $rewrite = Shopware()->Modules()->Core()->sRewriteLink($detail, $name);
+
+        $seoUrl = $baseFile . $this->channableArticleResource->getArticleSeoUrl($articleId);
+
+        $links = array('rewrite' => $rewrite,
+                       'url'  => $detail,
+                       'seoUrl' => $seoUrl);
+
+        return $links;
+    }
+
+    private function getBasePath()
+    {
+        $url = $this->Request()->getBaseUrl() . '/';
+        $uri = $this->Request()->getScheme() . '://' . $this->Request()->getHttpHost();
+        $url = $uri . $url;
+
+        return $url;
+    }
+
+    private function getShippingTimeText($detail)
+    {
+
+        if ( isset($detail['active']) && !$detail['active'] ) {
+
+            $shippingTime = Shopware()->Snippets()->getNamespace('frontend/plugins/index/delivery_informations')->get(
+                'DetailDataInfoNotAvailable'
+            );
+
+        } elseif ( $detail['releaseDate'] instanceOf \DateTime && $detail['releaseDate']->getTimestamp() > time() ) {
+
+            $dateFormat = Shopware()->Snippets()->getNamespace('api/resChannable')->get(
+                'dateFormat'
+            );
+
+            $shippingTime = Shopware()->Snippets()->getNamespace('frontend/plugins/index/delivery_informations')->get(
+                'DetailDataInfoShipping'
+            ) . ' ' . date($dateFormat);
+
+            # Todo ESD, partial stock
+            /*} elseif ( $detail['esd'] ) {
+                /*<link itemprop="availability" href="http://schema.org/InStock" />
+                <p class="delivery--information">
+                    <span class="delivery--text delivery--text-available">
+                        <i class="delivery--status-icon delivery--status-available"></i>
+                        {s name="DetailDataInfoInstantDownload"}{/s}
+                    </span>
+                </p>
+        } elseif {config name="instockinfo"} && $sArticle.modus == 0 && $sArticle.instock > 0 && $sArticle.quantity > $sArticle.instock}
+            <link itemprop="availability" href="http://schema.org/LimitedAvailability" />
+            <p class="delivery--information">
+                <span class="delivery--text delivery--text-more-is-coming">
+                    <i class="delivery--status-icon delivery--status-more-is-coming"></i>
+                    {s name="DetailDataInfoPartialStock"}{/s}
+                </span>
+            </p>*/
+        } elseif ( $detail['inStock'] >= $detail['minPurchase'] ) {
+
+            $shippingTime = Shopware()->Snippets()->getNamespace('frontend/plugins/index/delivery_informations')->get(
+                'DetailDataInfoInstock'
+            );
+
+        } elseif ( $detail['shippingTime'] ) {
+
+            $shippingTime = Shopware()->Snippets()->getNamespace('frontend/plugins/index/delivery_informations')->get(
+                'DetailDataShippingtime'
+            ) . ' ' . $detail['shippingTime'] . ' ' . Shopware()->Snippets()->getNamespace('frontend/plugins/index/delivery_informations')->get(
+                'DetailDataShippingDays'
+            );
+
+        } else {
+
+            $shippingTime = Shopware()->Snippets()->getNamespace('frontend/plugins/index/delivery_informations')->get(
+                'DetailDataNotAvailable'
+            );
+
+        }
+
+        return $shippingTime;
+    }
+
+    private function getArticleCategories($articleId)
+    {
+        $categories = $this->channableArticleResource->getArticleCategories($articleId);
+
+        $em = $this->getModelManager();
+        $category = $em->getRepository('Shopware\Models\Category\Category');
+
+        $categoryList = array();
+
+        for ( $i = 0; $i < sizeof($categories); $i++ ) {
+
+            $path = $category->getPathById($categories[$i]['id']);
+
+            $categoryList[] = array_values($path);
+        }
+
+        return $categoryList;
+    }
+
+    public function getShippingCosts($detail)
+    {
+
+        $paymentMethods = $this->getPaymentMethods();
+
+
+
+        #die(print_r($paymentMethods));
+
+        # , $payment, $country, $dispatch = null
+        # ,"prepayment","de"
+
+
+        #$this->export->sGetCountry();
+
+
+        $article = array('articleID' => $detail['articleId'],
+                         'ordernumber' => $detail['number'],
+                         'shippingfree' => $detail['shippingFree'],
+                         'price' => $detail['prices'][0]['price'] * (($detail['article']['tax']['tax'] + 100) / 100),
+                         'netprice' => $detail['prices'][0]['price'],
+                         'esd' => 0
+        );
+
+        /*$article['ordernumber'],
+        $article['shippingfree'],
+        $article['price'],
+        $article['netprice'],
+        $article['esd'],*/
+
+
+        #$this->export->sCurrency = ;
+
+        $this->export->sCurrency['factor'] = $this->shop->getCurrency()->getFactor();
+
+        $payment = $paymentMethods[0]['id'];
+
+        $country = 2;
+
+        $shippingCosts = $this->export->sGetArticleShippingcost($article, $payment, $country);
+
+        return $shippingCosts;
+
+        #die(__FILE__.print_r($shippingCosts));
+
+        #die(print_r($this->export->sGetPaymentmean($paymentMethods[0]['name'])));
+
+        /*$basket = $this->sGetDispatchBasket($article, $country['id'], $payment['id']);
+        if (empty($basket)) {
+            return false;
+        }
+        $dispatch = $this->sGetPremiumDispatch($basket, $dispatch);
+        if (empty($dispatch)) {
+            return false;
+        }
+
+        if ((!empty($dispatch['shippingfree']) && $dispatch['shippingfree'] <= $basket['amount'])
+            || empty($basket['count_article'])
+            || (!empty($basket['shippingfree']) && empty($dispatch['bind_shippingfree']))
+        ) {
+            if (empty($dispatch['surcharge_calculation'])) {
+                return $payment['surcharge'];
+            }
+
+            return 0;
+        }
+
+        if (empty($dispatch['calculation'])) {
+            $from = round($basket['weight'], 3);
+        } elseif ($dispatch['calculation'] == 1) {
+            $from = round($basket['amount'], 2);
+        } elseif ($dispatch['calculation'] == 2) {
+            $from = round($basket['count_article']);
+        } elseif ($dispatch['calculation'] == 3) {
+            $from = round($basket['calculation_value_' . $dispatch['id']], 2);
+        } else {
+            return false;
+        }
+
+        $sql = "
+            SELECT `value` , `factor`
+            FROM `s_premium_shippingcosts`
+            WHERE `from`<=$from
+            AND `dispatchID`={$dispatch['id']}
+            ORDER BY `from` DESC
+            LIMIT 1
+        ";
+        $result = $this->db->fetchRow($sql);
+
+        if (empty($result)) {
+            return false;
+        }
+
+        $result['shippingcosts'] = $result['value'];
+        if (!empty($result['factor'])) {
+            $result['shippingcosts'] += $result['factor'] / 100 * $from;
+        }
+        $result['surcharge'] = $this->sGetPremiumDispatchSurcharge($basket);
+        if (!empty($result['surcharge'])) {
+            $result['shippingcosts'] += $result['surcharge'];
+        }
+        $result['shippingcosts'] *= $this->sCurrency['factor'];
+        $result['shippingcosts'] = round($result['shippingcosts'], 2);
+        if (!empty($payment['surcharge']) && $dispatch['surcharge_calculation'] != 2 && (empty($article['shippingfree']) || empty($dispatch['surcharge_calculation']))) {
+            $result['shippingcosts'] += $payment['surcharge'];
+        }
+        */
+
+        return $result['shippingcosts'];
+    }
+
+    private function loadPaymentMethods()
+    {
+
+        $builder = Shopware()->Container()->get('dbal_connection')->createQueryBuilder();
+        $builder->select([
+            'id',
+            'name'
+        ]);
+        $builder->from('s_core_paymentmeans', 'payments');
+        $builder->where('payments.active = 1');
+
+        $statement = $builder->execute();
+        $this->paymentMethods = $statement->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    private function getPaymentMethods()
+    {
+        return $this->paymentMethods;
+    }
+
+    private function getArticleProperties($propertyValues)
+    {
+        $properties = array();
+
+        for ( $i = 0; $i < sizeof($propertyValues); $i++) {
+
+            $properties[$propertyValues[$i]['option']['name']] = $propertyValues[$i]['value'];
+
+        }
+
+        return $properties;
+    }
+
+}

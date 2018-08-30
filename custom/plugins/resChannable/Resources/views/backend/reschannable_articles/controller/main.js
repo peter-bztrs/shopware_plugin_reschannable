@@ -1,6 +1,6 @@
-/* {namespace name=backend/reschannablearticles/main} */
+/* {namespace name=backend/reschannable_articles/controller/main} */
 
-//{block name="backend/reschannablearticles/controller/main"}
+//{block name="backend/reschannable_articles/controller/main"}
 Ext.define('Shopware.apps.ReschannableArticles.controller.Main', {
     /**
      * Extend from the standard ExtJS 4 controller
