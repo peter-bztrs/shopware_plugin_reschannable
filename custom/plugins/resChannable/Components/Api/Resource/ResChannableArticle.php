@@ -77,23 +77,28 @@ class ResChannableArticle extends Resource
             'detailAttribute',
             'propertyGroup',
             'customerGroups',
-            'detailUnit'
+            'detailUnit',
+            'similar',
+            'related',
+            'images'
         ])
-        ->from('resChannable\Models\resChannableArticle\resChannableArticle', 'ChannableArticle')
-        ->join('ChannableArticle.detail', 'detail')
-        ->join('detail.article', 'article')
-        ->leftJoin('detail.prices', 'detailPrices')
-        ->leftJoin('detailPrices.customerGroup', 'priceCustomGroup')
-        ->leftJoin('article.tax', 'tax')
-        ->leftJoin('article.propertyValues', 'propertyValues')
-        ->leftJoin('propertyValues.option', 'propertyOption')
-        ->leftJoin('article.supplier', 'supplier')
-        ->leftJoin('detail.attribute', 'detailAttribute')
-        ->leftJoin('detail.configuratorOptions', 'configuratorOptions')
-        ->leftJoin('article.propertyGroup', 'propertyGroup')
-        ->leftJoin('article.customerGroups', 'customerGroups')
-        ->leftJoin('detail.unit', 'detailUnit')
-        ;
+            ->from('resChannable\Models\resChannableArticle\resChannableArticle', 'ChannableArticle')
+            ->join('ChannableArticle.detail', 'detail')
+            ->join('detail.article', 'article')
+            ->leftJoin('detail.prices', 'detailPrices')
+            ->leftJoin('detailPrices.customerGroup', 'priceCustomGroup')
+            ->leftJoin('article.tax', 'tax')
+            ->leftJoin('article.propertyValues', 'propertyValues')
+            ->leftJoin('propertyValues.option', 'propertyOption')
+            ->leftJoin('article.supplier', 'supplier')
+            ->leftJoin('detail.attribute', 'detailAttribute')
+            ->leftJoin('detail.configuratorOptions', 'configuratorOptions')
+            ->leftJoin('article.propertyGroup', 'propertyGroup')
+            ->leftJoin('article.customerGroups', 'customerGroups')
+            ->leftJoin('detail.unit', 'detailUnit')
+            ->leftJoin('article.similar', 'similar')
+            ->leftJoin('article.related', 'related')
+            ->leftJoin('article.images', 'images');
 
         return $builder;
     }
@@ -117,6 +122,24 @@ class ResChannableArticle extends Resource
     }
 
     /**
+     * Helper function to prevent duplicate source code
+     * to get a single row of the query builder result for the current resource result mode
+     * using the query paginator.
+     *
+     * @param QueryBuilder $builder
+     *
+     * @return array
+     */
+    private function getSingleResult(QueryBuilder $builder)
+    {
+        $query = $builder->getQuery();
+        $query->setHydrationMode($this->getResultMode());
+        $paginator = $this->getManager()->createPaginator($query);
+
+        return $paginator->getIterator()->current();
+    }
+
+    /**
      * Selects all images of the main variant of the passed article id.
      * The images are sorted by their position value.
      *
@@ -124,7 +147,7 @@ class ResChannableArticle extends Resource
      *
      * @return array
      */
-    public function getArticleImages($articleId)
+    /*public function getArticleImages($articleId)
     {
         $builder = $this->getManager()->createQueryBuilder();
         $builder->select(['images'])
@@ -136,7 +159,7 @@ class ResChannableArticle extends Resource
             ->setParameters(['articleId' => $articleId]);
 
         return $this->getFullResult($builder);
-    }
+    }*/
 
     /**
      * Helper function which selects all categories of the passed
@@ -167,6 +190,50 @@ class ResChannableArticle extends Resource
         $url = $connection->fetchColumn("SELECT path FROM `s_core_rewrite_urls` WHERE main=1 AND subshopID=1 AND org_path=?", ['sViewport=detail&sArticle='.$articleId]);
 
         return $url;
+    }
+
+    /**
+     * Helper function which selects all similar articles
+     * of the passed article id.
+     *
+     * @param $articleId
+     *
+     * @return mixed
+     */
+    public function getArticleSimilar($articleId)
+    {
+        $builder = $this->getManager()->createQueryBuilder();
+        $builder->select(['article', 'PARTIAL similar.{id, name}'])
+            ->from('Shopware\Models\Article\Article', 'article')
+            ->innerJoin('article.similar', 'similar')
+            ->where('article.id = :articleId')
+            ->setParameter('articleId', $articleId);
+
+        $article = $this->getSingleResult($builder);
+
+        return $article['similar'];
+    }
+
+    /**
+     * Helper function which selects all accessory articles
+     * of the passed article id.
+     *
+     * @param $articleId
+     *
+     * @return mixed
+     */
+    public function getArticleRelated($articleId)
+    {
+        $builder = $this->getManager()->createQueryBuilder();
+        $builder->select(['article', 'PARTIAL related.{id, name}'])
+            ->from('Shopware\Models\Article\Article', 'article')
+            ->innerJoin('article.related', 'related')
+            ->where('article.id = :articleId')
+            ->setParameter('articleId', $articleId);
+
+        $article = $this->getSingleResult($builder);
+
+        return $article['related'];
     }
 
 }

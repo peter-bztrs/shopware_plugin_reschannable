@@ -8,7 +8,7 @@
             <label lang="de">Channable</label>
             <controller>ReschannableArticles</controller>
             <action>index</action>
-            <class>sprite-metronome</class>
+            <class>reschannable-menu-icon</class>
             <parent identifiedBy="controller">Marketing</parent>
             <children>
                 <entry>
@@ -16,8 +16,8 @@
                     <label lang="en">Article</label>
                     <label lang="de">Artikel</label>
                     <controller>ReschannableArticles</controller>
-                    <action>index</action>
-                    <class>sprite-edit-list</class>
+                    <action>detail</action>
+                    <class>sprite-ui-scroll-pane-list</class>
                 </entry>
             </children>
         </entry>

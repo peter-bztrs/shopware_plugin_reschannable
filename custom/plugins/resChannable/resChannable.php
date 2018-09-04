@@ -5,7 +5,6 @@ namespace resChannable;
 use Doctrine\ORM\Tools\SchemaTool;
 use Shopware\Components\Plugin;
 use Shopware\Components\Plugin\Context\InstallContext;
-use Shopware\Components\Plugin\Context\UpdateContext;
 use Shopware\Models\User\User;
 
 class resChannable extends Plugin
@@ -19,25 +18,52 @@ class resChannable extends Plugin
         return [
             'Enlight_Controller_Action_PreDispatch' => 'addTemplateDir',
             'Enlight_Controller_Dispatcher_ControllerPath_Api_resChannableApi' => 'onGetReschannableApiController',
-            'Enlight_Controller_Front_StartDispatch' => 'onEnlightControllerFrontStartDispatch'
+            'Enlight_Controller_Front_StartDispatch' => 'onEnlightControllerFrontStartDispatch',
+            'Enlight_Controller_Action_PostDispatchSecure_Backend_Index' => 'onPostDispatchSecureBackendIndex'
         ];
     }
 
+    public function onPostDispatchSecureBackendIndex(\Enlight_Event_EventArgs $args) {
+        $this->container->get('Template')->addTemplateDir(
+            $this->getPath() . '/Resources/views/'
+        );
+        $args->getSubject()->View()->extendsTemplate('backend/reschannable/index/header.tpl');
+    }
+
+    /**
+     *
+     *
+     * @return string
+     */
     public function onGetReschannableApiController()
     {
         return $this->getPath() . '/Controllers/Api/resChannableApi.php';
     }
 
+    /**
+     * Register namespaces
+     */
     public function onEnlightControllerFrontStartDispatch()
     {
         $this->container->get('loader')->registerNamespace('Shopware\Components', $this->getPath() . '/Components/');
     }
 
+    /**
+     * Add template directory
+     *
+     * @param \Enlight_Controller_ActionEventArgs $args
+     */
     public function addTemplateDir(\Enlight_Controller_ActionEventArgs $args)
     {
         $args->getSubject()->View()->addTemplateDir($this->getPath() . '/Resources/views');
     }
 
+    /**
+     * Install handler
+     *
+     * @param InstallContext $context
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
     public function install(InstallContext $context)
     {
         $this->createApiUser();
@@ -45,12 +71,9 @@ class resChannable extends Plugin
         $this->createSchema();
     }
 
-    public function update(UpdateContext $context)
-    {
-        // todo: update schema / models
-
-    }
-
+    /**
+     * Creates database schema
+     */
     private function createSchema()
     {
         $tool = new SchemaTool($this->container->get('models'));
@@ -65,6 +88,8 @@ class resChannable extends Plugin
     }
 
     /**
+     * Get model meta data e.g. for article assignement
+     *
      * @return array
      */
     private function getModelMetaData()
@@ -72,6 +97,11 @@ class resChannable extends Plugin
         return [$this->container->get('models')->getClassMetadata(Models\resChannableArticle\resChannableArticle::class)];
     }
 
+    /**
+     * Creates the api user
+     *
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
     private function createApiUser()
     {
 
@@ -107,7 +137,7 @@ class resChannable extends Plugin
 
 
     /**
-     * Generates api key for user creation
+     * Generates random api key for user creation
      *
      * @param int $length
      * @return string
@@ -126,6 +156,12 @@ class resChannable extends Plugin
         return $key;
     }
 
+    /**
+     * Generates random password for user creation
+     *
+     * @param int $length
+     * @return string
+     */
     private function getGeneratedPassword($length)
     {
         $chars = '0123456789';
@@ -142,7 +178,3 @@ class resChannable extends Plugin
     }
 
 }
-
-
-
-

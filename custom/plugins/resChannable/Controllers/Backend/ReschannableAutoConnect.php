@@ -39,11 +39,6 @@ class Shopware_Controllers_Backend_ReschannableAutoConnect extends Enlight_Contr
 
         echo json_encode(array('url' => $url));
 
-        /*$this->View()->assign([
-            'success' => true,
-            'url' => $url
-        ]);*/
-
     }
 
     private function getBasePath()

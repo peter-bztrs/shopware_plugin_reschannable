@@ -46,6 +46,8 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
 
     private $paymentMethods = null;
 
+    private $pluginConfig = null;
+
     public function init()
     {
         $repository = Shopware()->Models()->getRepository('Shopware\Models\Shop\Shop');
@@ -55,6 +57,8 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
         $this->export = Shopware()->Modules()->Export();
 
         $this->setContainer(Shopware()->Container());
+
+        $this->pluginConfig = $this->container->get('shopware.plugin.cached_config_reader')->getByPluginName('resChannable', $this->shop);
 
         $this->channableArticleResource = \Shopware\Components\Api\Manager::getResource('ResChannableArticle');
         $this->articleResource = \Shopware\Components\Api\Manager::getResource('Article');
@@ -127,7 +131,7 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
 
             $item['releaseDate'] = $detail['releaseDate'];
 
-            $item['images'] = $this->getArticleImages($articleId);
+            $item['images'] = $this->getArticleImagePaths($article['images']);
 
             # Links
             $links = $this->getArticleLinks($articleId,$article['name']);
@@ -178,9 +182,11 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
             # Properties
             $item['properties'] = $this->getArticleProperties($article['propertyValues']);
 
-            # Todo similar
+            # Similar
+            $item['similar'] = $this->channableArticleResource->getArticleSimilar($articleId);
 
-            # ToDo related / crossselling
+            # Related
+            $item['related'] = $this->channableArticleResource->getArticleRelated($articleId);
 
             $result[] = $item;
 
@@ -191,23 +197,49 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
 
     private function getArticleIdList()
     {
-        $limit = $this->Request()->getParam('limit');
+        $limit = $this->pluginConfig['apiPollLimit'];
         $offset = $this->Request()->getParam('offset');
-        $filter = '';
         $sort = '';
 
         $this->View()->assign('offset', $offset);
         $this->View()->assign('limit', $limit);
+
+        $filter = array();
+
+        # only articles with images
+        if ( $this->pluginConfig['apiOnlyArticlesWithImg'] ) {
+            $filter[] = array(
+                'property'   => 'images.id',
+                'expression' => '>',
+                'value'      => '0'
+            );
+        }
+
+        # only active articles
+        if ( $this->pluginConfig['apiOnlyActiveArticles'] ) {
+            $filter[] = array(
+                'property'   => 'article.active',
+                'expression' => '=',
+                'value'      => '1'
+            );
+        }
+
+        # only articles with an ean
+        if ( $this->pluginConfig['apiOnlyArticlesWithEan'] ) {
+            $filter[] = array(
+                'property'   => 'detail.ean',
+                'expression' => '!=',
+                'value'      => ''
+            );
+        }
 
         $result = $this->channableArticleResource->getList($offset, $limit, $filter, $sort);
 
         return $result['data'];
     }
 
-    private function getArticleImages($articleId)
+    private function getArticleImagePaths($articleImages)
     {
-        $articleImages = $this->channableArticleResource->getArticleImages($articleId);
-
         $images = array();
 
         for ( $i = 0; $i < sizeof($articleImages); $i++ ) {
@@ -335,19 +367,7 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
 
     public function getShippingCosts($detail)
     {
-
         $paymentMethods = $this->getPaymentMethods();
-
-
-
-        #die(print_r($paymentMethods));
-
-        # , $payment, $country, $dispatch = null
-        # ,"prepayment","de"
-
-
-        #$this->export->sGetCountry();
-
 
         $article = array('articleID' => $detail['articleId'],
                          'ordernumber' => $detail['number'],
@@ -356,15 +376,6 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
                          'netprice' => $detail['prices'][0]['price'],
                          'esd' => 0
         );
-
-        /*$article['ordernumber'],
-        $article['shippingfree'],
-        $article['price'],
-        $article['netprice'],
-        $article['esd'],*/
-
-
-        #$this->export->sCurrency = ;
 
         $this->export->sCurrency['factor'] = $this->shop->getCurrency()->getFactor();
 
@@ -375,73 +386,6 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
         $shippingCosts = $this->export->sGetArticleShippingcost($article, $payment, $country);
 
         return $shippingCosts;
-
-        #die(__FILE__.print_r($shippingCosts));
-
-        #die(print_r($this->export->sGetPaymentmean($paymentMethods[0]['name'])));
-
-        /*$basket = $this->sGetDispatchBasket($article, $country['id'], $payment['id']);
-        if (empty($basket)) {
-            return false;
-        }
-        $dispatch = $this->sGetPremiumDispatch($basket, $dispatch);
-        if (empty($dispatch)) {
-            return false;
-        }
-
-        if ((!empty($dispatch['shippingfree']) && $dispatch['shippingfree'] <= $basket['amount'])
-            || empty($basket['count_article'])
-            || (!empty($basket['shippingfree']) && empty($dispatch['bind_shippingfree']))
-        ) {
-            if (empty($dispatch['surcharge_calculation'])) {
-                return $payment['surcharge'];
-            }
-
-            return 0;
-        }
-
-        if (empty($dispatch['calculation'])) {
-            $from = round($basket['weight'], 3);
-        } elseif ($dispatch['calculation'] == 1) {
-            $from = round($basket['amount'], 2);
-        } elseif ($dispatch['calculation'] == 2) {
-            $from = round($basket['count_article']);
-        } elseif ($dispatch['calculation'] == 3) {
-            $from = round($basket['calculation_value_' . $dispatch['id']], 2);
-        } else {
-            return false;
-        }
-
-        $sql = "
-            SELECT `value` , `factor`
-            FROM `s_premium_shippingcosts`
-            WHERE `from`<=$from
-            AND `dispatchID`={$dispatch['id']}
-            ORDER BY `from` DESC
-            LIMIT 1
-        ";
-        $result = $this->db->fetchRow($sql);
-
-        if (empty($result)) {
-            return false;
-        }
-
-        $result['shippingcosts'] = $result['value'];
-        if (!empty($result['factor'])) {
-            $result['shippingcosts'] += $result['factor'] / 100 * $from;
-        }
-        $result['surcharge'] = $this->sGetPremiumDispatchSurcharge($basket);
-        if (!empty($result['surcharge'])) {
-            $result['shippingcosts'] += $result['surcharge'];
-        }
-        $result['shippingcosts'] *= $this->sCurrency['factor'];
-        $result['shippingcosts'] = round($result['shippingcosts'], 2);
-        if (!empty($payment['surcharge']) && $dispatch['surcharge_calculation'] != 2 && (empty($article['shippingfree']) || empty($dispatch['surcharge_calculation']))) {
-            $result['shippingcosts'] += $payment['surcharge'];
-        }
-        */
-
-        return $result['shippingcosts'];
     }
 
     private function loadPaymentMethods()
