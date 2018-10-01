@@ -10,7 +10,7 @@
         </element>
         <element type="boolean">
             <name>apiOnlyArticlesWithImg</name>
-            <label lang="de">Nur Artikel mit Bildern übertragen</label>
+            <label lang="de">Nur Artikel mit Bild übertragen</label>
             <label lang="en">Only transfer items with pictures</label>
             <value>false</value>
         </element>

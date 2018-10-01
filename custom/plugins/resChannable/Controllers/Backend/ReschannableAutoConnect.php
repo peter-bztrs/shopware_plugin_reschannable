@@ -31,11 +31,9 @@ class Shopware_Controllers_Backend_ReschannableAutoConnect extends Enlight_Contr
 
         $baseUrl = $this->getBasePath();
 
-        $shopUrl = urlencode($baseUrl.'api/resChannableApi?fnc=getarticles');
-
         $url = Shopware()->Snippets()->getNamespace('api/resChannable')->get(
             'autoConnectUrl'
-        ) . '?url='.$shopUrl.'&api_key='.$sApiKey;
+        ) . '?url='.$baseUrl.'&api_key='.$sApiKey.'&username=ChannableApiUser';
 
         echo json_encode(array('url' => $url));
 
@@ -43,7 +41,7 @@ class Shopware_Controllers_Backend_ReschannableAutoConnect extends Enlight_Contr
 
     private function getBasePath()
     {
-        $url = $this->Request()->getBaseUrl() . '/';
+        $url = $this->Request()->getBaseUrl();
         $uri = $this->Request()->getScheme() . '://' . $this->Request()->getHttpHost();
         $url = $uri . $url;
 

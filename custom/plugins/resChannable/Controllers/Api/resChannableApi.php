@@ -21,6 +21,11 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
     protected $mediaResource = null;
 
     /**
+     * @var \Shopware\Components\Api\Resource\Translation
+     */
+    protected $translationResource = null;
+
+    /**
      * @var \Shopware\Models\Shop\Shop
      */
     protected $shop = null;
@@ -63,6 +68,7 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
         $this->channableArticleResource = \Shopware\Components\Api\Manager::getResource('ResChannableArticle');
         $this->articleResource = \Shopware\Components\Api\Manager::getResource('Article');
         $this->mediaResource = \Shopware\Components\Api\Manager::getResource('Media');
+        $this->translationResource = \Shopware\Components\Api\Manager::getResource('Translation');
 
         $this->sSYSTEM = Shopware()->System();
 
@@ -188,6 +194,9 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
             # Related
             $item['related'] = $this->channableArticleResource->getArticleRelated($articleId);
 
+            # Translations
+            $item['translations'] = $this->getTranslations($articleId);
+
             $result[] = $item;
 
         }
@@ -244,8 +253,14 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
 
         for ( $i = 0; $i < sizeof($articleImages); $i++ ) {
 
-            $image = $this->mediaResource->getOne($articleImages[$i]['mediaId']);
-            $images[] = $image['path'];
+            try {
+
+                $image = $this->mediaResource->getOne($articleImages[$i]['mediaId']);
+                $images[] = $image['path'];
+
+            } catch ( \Exception $Exception ) {
+
+            }
 
         }
 
@@ -420,5 +435,25 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
 
         return $properties;
     }
+
+    private function getTranslations($articleId)
+    {
+        $builder = Shopware()->Container()->get('dbal_connection')->createQueryBuilder();
+        $builder->select([
+            'translations.languageID','locales.language','locales.locale','translations.name',
+            'translations.description','translations.description_long as descriptionLong'
+        ]);
+        $builder->from('s_articles_translations', 'translations');
+        $builder->innerJoin('translations','s_core_shops','shops','translations.languageID = shops.id');
+        $builder->innerJoin('shops','s_core_locales','locales','shops.locale_id = locales.id');
+        $builder->where('translations.articleID = :articleId');
+        $builder->setParameter('articleId',$articleId);
+
+        $statement = $builder->execute();
+        $languages = $statement->fetchAll(\PDO::FETCH_ASSOC);
+
+        return $languages;
+    }
+
 
 }
