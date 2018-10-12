@@ -12,7 +12,7 @@
 https://github.com/RESPONSEGmbH/shopware_plugin_reschannable/archive/master.zip
 2.	Unpack the resChannable Zip archive.
 3.	Log in via FTP to your shop server, e.g. with the FileZilla software, and navigate to the Shopware root directory, where the shopware.php is located.
-4.	Now upload the plugin to the Shopware directory custom/plugins/.
+4.	Now upload the plugin directory resChannable from custom/plugins/ into the Shopware directory custom/plugins/.
 5.	Install and activate the plugin via Plugin Manager in your Shopware backend.
 
 ## Configuration
