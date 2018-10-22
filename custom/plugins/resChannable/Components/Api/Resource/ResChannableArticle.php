@@ -98,8 +98,8 @@ class ResChannableArticle extends Resource
         $builder = $this->getManager()->createQueryBuilder();
 
         $builder->select([
-            'article',
             'detail',
+            'article',
             'detailPrices',
             'tax',
             'propertyValues',

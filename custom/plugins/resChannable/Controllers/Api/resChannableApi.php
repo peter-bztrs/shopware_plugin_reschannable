@@ -118,7 +118,13 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
 
             $channableArticle = $articleIdList[$i];
 
-            $detail = $channableArticle['detail'];
+            # fix because of the "transfer all articles" flag
+            if ($channableArticle['detail']) {
+                $detail = $channableArticle['detail'];
+            } else {
+                $detail = $channableArticle;
+            }
+
             $article = $detail['article'];
             $articleId = $detail['articleId'];
             $item = array();
