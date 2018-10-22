@@ -4,6 +4,6 @@
   "homepage": "https://www.bztrs.nl",
   "type": "shopware-plugin",
   "extra": {
-    "installer-name": "responsegmbhShopwareChannelable"
+    "installer-name": "resChannelable"
   }
 }
