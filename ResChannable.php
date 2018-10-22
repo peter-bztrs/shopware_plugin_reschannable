@@ -7,7 +7,7 @@ use Shopware\Components\Plugin;
 use Shopware\Components\Plugin\Context\InstallContext;
 use Shopware\Models\User\User;
 
-class resChannable extends Plugin
+class ResChannable extends Plugin
 {
 
     /**
