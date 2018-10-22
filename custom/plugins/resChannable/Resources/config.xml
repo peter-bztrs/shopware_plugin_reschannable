@@ -3,20 +3,28 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/5.3/engine/Shopware/Components/Plugin/schema/config.xsd">
     <elements>
         <element type="boolean">
+            <name>apiAllArticles</name>
+            <label lang="de"><![CDATA[Alle Artikel übertragen]]></label>
+            <label lang="en">Transfer all articles</label>
+            <value>false</value>
+            <description lang="de">Diese Einstellung überschreibt die manuelle Artikelzuordnung.</description>
+            <description lang="en">This setting overrides manual article mapping.</description>
+        </element>
+        <element type="boolean">
             <name>apiOnlyActiveArticles</name>
-            <label lang="de">Nur aktive Artikel übertragen</label>
+            <label lang="de"><![CDATA[Nur aktive Artikel übertragen]]></label>
             <label lang="en">Only transfer active articles</label>
             <value>false</value>
         </element>
         <element type="boolean">
             <name>apiOnlyArticlesWithImg</name>
-            <label lang="de">Nur Artikel mit Bild übertragen</label>
+            <label lang="de"><![CDATA[Nur Artikel mit Bild übertragen]]></label>
             <label lang="en">Only transfer items with pictures</label>
             <value>false</value>
         </element>
         <element type="boolean">
             <name>apiOnlyArticlesWithEan</name>
-            <label lang="de">Nur Artikel mit EAN übertragen</label>
+            <label lang="de"><![CDATA[Nur Artikel mit EAN übertragen]]></label>
             <label lang="en">Only transfer items with EAN</label>
             <value>false</value>
         </element>

@@ -16,6 +16,40 @@ class ResChannableArticle extends Resource
      *
      * @return array
      */
+    public function getAllArticlesList($offset, $limit, $filter, $sort)
+    {
+        $this->checkPrivilege('read');
+
+        $builder = $this->getAllArticlesBaseQuery();
+        $builder = $this->addQueryLimit($builder, $offset, $limit);
+
+        if (!empty($filter)) {
+            $builder->addFilter($filter);
+        }
+        if (!empty($sort)) {
+            $builder->addOrderBy($sort);
+        }
+
+        $query = $builder->getQuery();
+
+        $query->setHydrationMode($this->getResultMode());
+
+        $paginator = $this->getManager()->createPaginator($query);
+        $totalResult = $paginator->count();
+        $articles = $paginator->getIterator()->getArrayCopy();
+
+        return ['data' => $articles, 'total' => $totalResult];
+    }
+
+
+    /**
+     * @param $offset
+     * @param $limit
+     * @param $filter
+     * @param $sort
+     *
+     * @return array
+     */
     public function getList($offset, $limit, $filter, $sort)
     {
         $this->checkPrivilege('read');
@@ -52,6 +86,51 @@ class ResChannableArticle extends Resource
     {
         $builder->setFirstResult($offset)
             ->setMaxResults($limit);
+
+        return $builder;
+    }
+
+    /**
+     * @return \Doctrine\ORM\QueryBuilder|QueryBuilder
+     */
+    protected function getAllArticlesBaseQuery()
+    {
+        $builder = $this->getManager()->createQueryBuilder();
+
+        $builder->select([
+            'article',
+            'detail',
+            'detailPrices',
+            'tax',
+            'propertyValues',
+            'propertyOption',
+            'configuratorOptions',
+            'supplier',
+            'priceCustomGroup',
+            'detailAttribute',
+            'propertyGroup',
+            'customerGroups',
+            'detailUnit',
+            'similar',
+            'related',
+            'images'
+        ])
+            ->from('Shopware\Models\Article\Detail', 'detail')
+            ->join('detail.article', 'article')
+            ->leftJoin('detail.prices', 'detailPrices')
+            ->leftJoin('detailPrices.customerGroup', 'priceCustomGroup')
+            ->leftJoin('article.tax', 'tax')
+            ->leftJoin('article.propertyValues', 'propertyValues')
+            ->leftJoin('propertyValues.option', 'propertyOption')
+            ->leftJoin('article.supplier', 'supplier')
+            ->leftJoin('detail.attribute', 'detailAttribute')
+            ->leftJoin('detail.configuratorOptions', 'configuratorOptions')
+            ->leftJoin('article.propertyGroup', 'propertyGroup')
+            ->leftJoin('article.customerGroups', 'customerGroups')
+            ->leftJoin('detail.unit', 'detailUnit')
+            ->leftJoin('article.similar', 'similar')
+            ->leftJoin('article.related', 'related')
+            ->leftJoin('article.images', 'images');
 
         return $builder;
     }

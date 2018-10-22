@@ -242,7 +242,12 @@ class Shopware_Controllers_Api_resChannableApi extends Shopware_Controllers_Api_
             );
         }
 
-        $result = $this->channableArticleResource->getList($offset, $limit, $filter, $sort);
+        # check if all articles flag is set
+        if ( $this->pluginConfig['apiAllArticles'] ) {
+            $result = $this->channableArticleResource->getAllArticlesList($offset, $limit, $filter, $sort);
+        } else {
+            $result = $this->channableArticleResource->getList($offset, $limit, $filter, $sort);
+        }
 
         return $result['data'];
     }
